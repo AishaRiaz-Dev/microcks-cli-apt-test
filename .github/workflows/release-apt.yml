@@ -47,11 +47,14 @@ jobs:
         run: |
           aptly repo add -force-replace=true microcks-cli-repo dist/
 
-      - name: Publish Structured Component Indexes
+            - name: Publish Structured Component Indexes
         run: |
           rm -rf public
           mkdir -p public
           aptly publish repo -skip-signing=true -architectures=amd64 -force-overwrite=true microcks-cli-repo public
+          # Add this line below to fix the root URL landing page!
+          echo "<h1>Microcks CLI APT Repository Sandbox Live</h1><p>The metadata endpoints are fully active.</p>" > public/index.html
+
 
       - name: Fix Jekyll Directory Tracking
         run: |
