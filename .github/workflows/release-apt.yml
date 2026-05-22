@@ -49,7 +49,7 @@ jobs:
           echo "<h1>Microcks CLI APT Repository</h1><p>Metadata endpoints are active.</p>" > public/index.html
           
           # Ensure GitHub Pages doesn't ignore the aptly structure
-          touch public/.nojekyll
+          touch public/.nojekyll 
 
       - name: Upload Pages Artifact
         uses: actions/upload-pages-artifact@v3
