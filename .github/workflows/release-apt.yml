@@ -14,16 +14,48 @@ jobs:
   build-and-publish:
     environment:
       name: github-pages
-      url: https://AishaRiaz-Dev.github.io/microcks-cli-apt-test/
+      url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code Base
         uses: actions/checkout@v4
 
-      - name: Initialize Direct Architecture Framework
+      - name: Provision Aptly System Utility
         run: |
+          sudo apt-get update
+          sudo apt-get install -y aptly
+          echo '{}' > ~/.aptly.conf
+
+      - name: Initialize Local Database Components
+        run: |
+          aptly repo create -architectures=amd64 -component=main -distribution=stable microcks-cli-repo || true
+
+      - name: Generate Structurally Valid Mock Debian Package
+        run: |
+          mkdir -p mock-pkg/DEBIAN
+          cat <<EOF > mock-pkg/DEBIAN/control
+          Package: microcks-cli
+          Version: 1.0.0
+          Architecture: amd64
+          Maintainer: Sandbox Developer <dev@example.com>
+          Description: Automated Microcks CLI static package indexing prototype.
+          EOF
+          mkdir -p dist
+          dpkg-deb --build mock-pkg dist/microcks-cli_1.0.0_linux_amd64.deb
+
+      - name: Ingest Binary Distribution Targets
+        run: |
+          aptly repo add -force-replace=true microcks-cli-repo dist/
+
+      - name: Publish Structured Component Indexes
+        run: |
+          rm -rf public
           mkdir -p public
-          echo "<h1>Microcks CLI APT Repository Sandbox Live</h1>" > public/index.html
+          aptly publish repo -skip-signing=true -architectures=amd64 -force-overwrite=true microcks-cli-repo public
+
+      - name: Fix Jekyll Directory Tracking
+        run: |
+          touch public/.nojekyll
 
       - name: Upload Static Web Artifacts
         uses: actions/upload-pages-artifact@v3
@@ -33,3 +65,6 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+
+
+     
