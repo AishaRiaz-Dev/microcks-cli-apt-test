@@ -14,42 +14,47 @@ jobs:
   build-and-publish:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
+      - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Setup Aptly
+      - name: Setup Aptly and Environment
         run: |
           sudo apt-get update && sudo apt-get install -y aptly
+          # Initialize the repo structure
           aptly repo create -architectures=amd64 -component=main -distribution=stable microcks-cli-repo
-          
-            - name: Build Dummy Package
+
+      - name: Build Dummy Package
         run: |
-          # 1. Ensure absolute paths
+          # Use absolute workspace paths to ensure the runner finds directories
           export WORKSPACE=$GITHUB_WORKSPACE
           mkdir -p $WORKSPACE/mock-pkg/DEBIAN
           mkdir -p $WORKSPACE/dist
           
-          # 2. Build the control file
+          # Create the control file
           echo -e "Package: microcks-cli\nVersion: 1.0.0\nArchitecture: amd64\nMaintainer: Me\nDescription: Test" > $WORKSPACE/mock-pkg/DEBIAN/control
           
-          # 3. Build the package into the absolute dist path
+          # Build the .deb file
           dpkg-deb --build $WORKSPACE/mock-pkg $WORKSPACE/dist/microcks-cli_1.0.0_linux_amd64.deb
           
-          # 4. Add to aptly
+          # Add to aptly
           aptly repo add -force-replace=true microcks-cli-repo $WORKSPACE/dist/
 
-
-      - name: Publish
+      - name: Publish Repository
         run: |
           mkdir -p public
+          # Publish the repository to the public folder
           aptly publish repo -skip-signing=true -architectures=amd64 -force-overwrite=true microcks-cli-repo public
-          echo "<h1>APT Repo Active</h1>" > public/index.html
+          
+          # Add a landing page to fix 404 error
+          echo "<h1>Microcks CLI APT Repository</h1><p>Metadata endpoints are active.</p>" > public/index.html
+          
+          # Ensure GitHub Pages doesn't ignore the aptly structure
           touch public/.nojekyll
 
-      - name: Upload Artifact
+      - name: Upload Pages Artifact
         uses: actions/upload-pages-artifact@v3
         with:
           path: 'public'
 
-      - name: Deploy
+      - name: Deploy to GitHub Pages
         uses: actions/deploy-pages@v4
