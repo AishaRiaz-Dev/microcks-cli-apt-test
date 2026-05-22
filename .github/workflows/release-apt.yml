@@ -27,7 +27,7 @@ jobs:
           mkdir -p mock-pkg/DEBIAN
           echo -e "Package: microcks-cli\nVersion: 1.0.0\nArchitecture: amd64\nMaintainer: Me\nDescription: Test" > mock-pkg/DEBIAN/control
           dpkg-deb --build mock-pkg dist/microcks-cli_1.0.0_linux_amd64.deb
-          aptly repo add -force-replace=true microcks-cli-repo dist/
+          aptly repo add -force-replace=true microcks-cli-repo dist/ 
 
       - name: Publish
         run: |
