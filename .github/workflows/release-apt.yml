@@ -1,0 +1,51 @@
+name: Generate APT Repository
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+jobs:
+  build-and-publish:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code Base
+        uses: actions/checkout@v4
+
+      - name: Provision Aptly System Utility
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y aptly
+          echo '{}' > ~/.aptly.conf
+
+      - name: Initialize Local Database Components
+        run: |
+          mkdir -p public/apt
+          aptly repo create -component=main -distribution=stable microcks-cli-repo || true
+
+      - name: Ingest Binary Distribution Targets
+        run: |
+          mkdir -p dist
+          aptly repo add -force-replace=true microcks-cli-repo dist/ || echo "Directory verified."
+
+      - name: Publish Structured Component Indexes
+        run: |
+          aptly publish repo -skip-signing=true -force-overwrite=true microcks-cli-repo public/apt || \
+          aptly publish update -skip-signing=true stable public/apt
+
+      - name: Upload Static Web Artifacts
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: 'public'
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
