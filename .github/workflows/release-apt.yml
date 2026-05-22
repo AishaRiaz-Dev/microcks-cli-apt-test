@@ -12,62 +12,34 @@ permissions:
 
 jobs:
   build-and-publish:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout Code Base
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Provision Aptly System Utility
+      - name: Setup Aptly
         run: |
-          sudo apt-get update
-          sudo apt-get install -y aptly
-          echo '{}' > ~/.aptly.conf
-
-      - name: Initialize Local Database Components
-        run: |
-          aptly repo create -architectures=amd64 -component=main -distribution=stable microcks-cli-repo || true
-
-      - name: Generate Structurally Valid Mock Debian Package
+          sudo apt-get update && sudo apt-get install -y aptly
+          aptly repo create -architectures=amd64 -component=main -distribution=stable microcks-cli-repo
+          
+      - name: Build Dummy Package
         run: |
           mkdir -p mock-pkg/DEBIAN
-          cat <<EOF > mock-pkg/DEBIAN/control
-          Package: microcks-cli
-          Version: 1.0.0
-          Architecture: amd64
-          Maintainer: Sandbox Developer <dev@example.com>
-          Description: Automated Microcks CLI static package indexing prototype.
-          EOF
-          mkdir -p dist
+          echo -e "Package: microcks-cli\nVersion: 1.0.0\nArchitecture: amd64\nMaintainer: Me\nDescription: Test" > mock-pkg/DEBIAN/control
           dpkg-deb --build mock-pkg dist/microcks-cli_1.0.0_linux_amd64.deb
-
-      - name: Ingest Binary Distribution Targets
-        run: |
           aptly repo add -force-replace=true microcks-cli-repo dist/
 
-            - name: Publish Structured Component Indexes
+      - name: Publish
         run: |
-          rm -rf public
           mkdir -p public
           aptly publish repo -skip-signing=true -architectures=amd64 -force-overwrite=true microcks-cli-repo public
-          # Add this line below to fix the root URL landing page!
-          echo "<h1>Microcks CLI APT Repository Sandbox Live</h1><p>The metadata endpoints are fully active.</p>" > public/index.html
-
-
-      - name: Fix Jekyll Directory Tracking
-        run: |
+          echo "<h1>APT Repo Active</h1>" > public/index.html
           touch public/.nojekyll
 
-      - name: Upload Static Web Artifacts
+      - name: Upload Artifact
         uses: actions/upload-pages-artifact@v3
         with:
           path: 'public'
 
-      - name: Deploy to GitHub Pages
-        id: deployment
+      - name: Deploy
         uses: actions/deploy-pages@v4
-
-
-     
