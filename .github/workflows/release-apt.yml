@@ -1,0 +1,41 @@
+# Force pipeline update trigger
+name: Generate APT Repository
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Install Aptly
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y aptly
+
+      - name: Initialize APT Repo Layout
+        run: |
+          mkdir -p public/apt
+          aptly repo create -component=main -distribution=stable microcks-cli-repo
+
+      - name: Add Debian Package to Index
+        run: |
+          aptly repo add microcks-cli-repo dist/
+
+      - name: Publish Local Repository Layout
+        run: |
+          aptly publish repo -skip-signing=true microcks-cli-repo public/apt
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./public
