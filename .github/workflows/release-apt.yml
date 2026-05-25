@@ -20,12 +20,15 @@ jobs:
       - name: Setup Aptly and Environment
         run: |
           sudo apt-get update && sudo apt-get install -y aptly
+          
+          # Force aptly to use the local workspace directory for publishing
+          echo "{\"rootDir\": \"$GITHUB_WORKSPACE/.aptly\"}" > $GITHUB_WORKSPACE/.aptly.conf
+          
           # Initialize the repo structure
-          aptly repo create -architectures=amd64 -component=main -distribution=stable microcks-cli-repo
+          aptly -config=$GITHUB_WORKSPACE/.aptly.conf repo create -architectures=amd64 -component=main -distribution=stable microcks-cli-repo
 
       - name: Build Dummy Package
         run: |
-          # Use absolute workspace paths to ensure the runner finds directories
           export WORKSPACE=$GITHUB_WORKSPACE
           mkdir -p $WORKSPACE/mock-pkg/DEBIAN
           mkdir -p $WORKSPACE/dist
@@ -37,19 +40,23 @@ jobs:
           dpkg-deb --build $WORKSPACE/mock-pkg $WORKSPACE/dist/microcks-cli_1.0.0_linux_amd64.deb
           
           # Add to aptly
-          aptly repo add -force-replace=true microcks-cli-repo $WORKSPACE/dist/
+          aptly -config=$WORKSPACE/.aptly.conf repo add -force-replace=true microcks-cli-repo $WORKSPACE/dist/
 
       - name: Publish Repository
         run: |
-          mkdir -p public
-          # Publish the repository to the public folder
-          aptly publish repo -skip-signing=true -architectures=amd64 -force-overwrite=true microcks-cli-repo public
+          mkdir -p $GITHUB_WORKSPACE/public
           
-          # Add a landing page to fix 404 error
-          echo "<h1>Microcks CLI APT Repository</h1><p>Metadata endpoints are active.</p>" > public/index.html
+          # Publish using the configuration path explicitly pointing to our public folder structure
+          aptly -config=$GITHUB_WORKSPACE/.aptly.conf publish repo -skip-signing=true -architectures=amd64 -force-overwrite=true microcks-cli-repo
           
-          # Ensure GitHub Pages doesn't ignore the aptly structure
-          touch public/.nojekyll 
+          # Copy the generated layout from the hidden rootDir over to our public artifact deployment dir
+          cp -r $GITHUB_WORKSPACE/.aptly/public/* $GITHUB_WORKSPACE/public/
+          
+          # Add a landing page to fix base URL 404 error
+          echo "<h1>Microcks CLI APT Repository</h1><p>Metadata endpoints are active.</p>" > $GITHUB_WORKSPACE/public/index.html
+          
+          # Ensure GitHub Pages doesn't ignore extensionless files
+          touch $GITHUB_WORKSPACE/public/.nojekyll 
 
       - name: Upload Pages Artifact
         uses: actions/upload-pages-artifact@v3
