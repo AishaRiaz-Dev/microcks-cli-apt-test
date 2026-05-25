@@ -22,15 +22,14 @@ This sandbox implements a zero-overhead distribution flow using a headless Ubunt
 
 ---
 
-## 📁 Repository Directory Layout
+## 📁 Repository Workspace Layout
 
-The workspace architecture isolates configuration manifests from underlying test distribution artifacts:
+The repository design strictly isolates structural automation manifests from the dynamically generated distribution branch assets:
 
 ```text
 ├── .github/
 │   └── workflows/
-│       └── release-apt.yml     # Core YAML CI/CD automation pipeline rules
-├── dist/
-│   └── microcks-cli...deb     # Mock distribution asset placeholder
-├── index.html                  # Sandbox deployment discovery homepage
-└── README.md                   # Enterprise technical architecture documentation
+│       └── release-apt.yml   # Native GitHub Actions CI/CD Pipeline engine
+├── LICENSE                   # Open-source MIT validation license
+└── README.md                 # Primary architectural blueprint & technical documentation
+
